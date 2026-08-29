@@ -40,6 +40,13 @@
       <span id="load-indicator" class="hidden"></span>
     </div>
 
+    <div id="nav-actions">
+      <button id="btn-settings" class="nav-settings-btn" title="Settings (Tor Bridges, Networks, Privacy)">
+        <span class="settings-btn-icon">&#9881;</span>
+        <span class="settings-bridge-dot hidden" id="settings-bridge-dot" title="Tor Bridges Active"></span>
+      </button>
+    </div>
+
     <div id="network-switcher">
       <button class="net-btn" id="net-tor" data-network="tor" title="Route through Tor (right-click to restart)">
         <div class="net-btn-row">
@@ -65,6 +72,272 @@
         </div>
         <span class="net-sub">Always on</span>
       </button>
+    </div>
+  </div>
+
+  <!-- Settings Modal Dialog -->
+  <div id="settings-modal-overlay" class="modal-overlay hidden">
+    <div id="settings-modal" class="modal-card settings-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge">&#9881;</div>
+          <div>
+            <h2 class="modal-title">Settings</h2>
+            <p class="modal-subtitle">Configure Tor bridges, network routing, search preferences, and privacy.</p>
+          </div>
+        </div>
+        <button id="btn-close-settings" class="modal-close-btn" title="Close dialog">&#10005;</button>
+      </div>
+
+      <div class="settings-modal-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="settings-sidebar">
+          <button class="settings-tab-btn active" data-tab="bridges">
+            <span class="tab-icon">&#127753;</span>
+            <span class="tab-label">Tor Bridges</span>
+            <span class="tab-badge" id="sidebar-bridge-badge">OFF</span>
+          </button>
+          <button class="settings-tab-btn" data-tab="networks">
+            <span class="tab-icon">&#127760;</span>
+            <span class="tab-label">Networks</span>
+          </button>
+          <button class="settings-tab-btn" data-tab="privacy">
+            <span class="tab-icon">&#128274;</span>
+            <span class="tab-label">Privacy & Search</span>
+          </button>
+          <button class="settings-tab-btn" data-tab="about">
+            <span class="tab-icon">&#8505;</span>
+            <span class="tab-label">About</span>
+          </button>
+        </nav>
+
+        <!-- Tab Content Panels -->
+        <div class="settings-content-area">
+
+          <!-- 1. Tor Bridges Panel -->
+          <div id="tab-panel-bridges" class="settings-panel active">
+            <div class="panel-header">
+              <h3 class="panel-title">Tor Bridges & Obfuscation</h3>
+              <p class="panel-desc">Bypass internet censorship, deep packet inspection, and network blocks by routing connections through unlisted Tor bridge relays.</p>
+            </div>
+
+            <!-- Enable Switch -->
+            <div class="bridge-toggle-row">
+              <div class="toggle-info">
+                <span class="toggle-title">Enable Tor Bridges</span>
+                <span class="toggle-desc">Route Tor connections through obfuscated bridge relays instead of public entry guards.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="bridge-enable-toggle">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <!-- Bridge Options -->
+            <div id="bridge-options-container" class="bridge-options-section">
+              <div class="section-heading">Select Bridge Type</div>
+
+              <div class="bridge-radio-group">
+                <!-- obfs4 -->
+                <label class="bridge-radio-card" for="bridge-type-obfs4">
+                  <input type="radio" name="bridgeType" id="bridge-type-obfs4" value="builtin-obfs4" checked>
+                  <div class="radio-content">
+                    <div class="radio-header">
+                      <span class="radio-title">Built-in obfs4</span>
+                      <span class="badge-recommended">Recommended</span>
+                    </div>
+                    <span class="radio-desc">Transforms Tor traffic into randomized data streams that resist Deep Packet Inspection (DPI).</span>
+                  </div>
+                </label>
+
+                <!-- snowflake -->
+                <label class="bridge-radio-card" for="bridge-type-snowflake">
+                  <input type="radio" name="bridgeType" id="bridge-type-snowflake" value="builtin-snowflake">
+                  <div class="radio-content">
+                    <div class="radio-header">
+                      <span class="radio-title">Built-in Snowflake</span>
+                    </div>
+                    <span class="radio-desc">Routes traffic through ephemeral WebRTC proxies run by volunteer browsers worldwide.</span>
+                  </div>
+                </label>
+
+                <!-- meek-azure -->
+                <label class="bridge-radio-card" for="bridge-type-meek">
+                  <input type="radio" name="bridgeType" id="bridge-type-meek" value="builtin-meek-azure">
+                  <div class="radio-content">
+                    <div class="radio-header">
+                      <span class="radio-title">Built-in Meek-Azure</span>
+                    </div>
+                    <span class="radio-desc">Domain fronting through Microsoft Azure CDN cloud infrastructure.</span>
+                  </div>
+                </label>
+
+                <!-- custom -->
+                <label class="bridge-radio-card" for="bridge-type-custom">
+                  <input type="radio" name="bridgeType" id="bridge-type-custom" value="custom">
+                  <div class="radio-content">
+                    <div class="radio-header">
+                      <span class="radio-title">Custom Bridges</span>
+                    </div>
+                    <span class="radio-desc">Paste your own private bridge lines from BridgeDB, Telegram bot, or email.</span>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Custom Bridge Input Container -->
+              <div id="custom-bridge-box" class="custom-bridge-box hidden">
+                <label for="custom-bridges-text" class="custom-bridge-label">Bridge Lines (one per line):</label>
+                <textarea id="custom-bridges-text" class="custom-bridges-textarea" rows="3" placeholder="obfs4 194.163.174.195:443 65860714DC2CE3BE17B79D3B51458A35FC843477 cert=... iat-mode=0&#10;Bridge 192.0.2.1:9001 ..."></textarea>
+                <div class="bridge-sources-guide">
+                  <span class="guide-title">How to obtain bridges:</span>
+                  <div class="guide-items">
+                    <span>&bull; Web: <a href="#" id="link-tor-bridges" class="guide-link">bridges.torproject.org</a></span>
+                    <span>&bull; Telegram: Send <code>/bridges</code> to <strong>@GetBridgesBot</strong></span>
+                    <span>&bull; Email: Send <code>get transport obfs4</code> to <strong>bridges@torproject.org</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Transport Diagnostics -->
+              <div class="transport-diagnostics">
+                <span class="diag-label">System Transport Plugins:</span>
+                <div class="diag-tags" id="transport-tags">
+                  <span class="diag-tag" id="tag-obfs4">obfs4: checking...</span>
+                  <span class="diag-tag" id="tag-snowflake">snowflake: checking...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Networks & Daemons Panel -->
+          <div id="tab-panel-networks" class="settings-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Networks & Daemons</h3>
+              <p class="panel-desc">Manage proxy routes, startup networks, and local daemon services.</p>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-title">Default Startup Network</span>
+                <span class="setting-desc">The routing mode active when DarkBrowser starts.</span>
+              </div>
+              <select id="setting-default-network" class="setting-select">
+                <option value="tor">Tor Network (SOCKS5 9050)</option>
+                <option value="i2p">I2P Network (HTTP 4444)</option>
+                <option value="direct">Clearnet (Direct)</option>
+              </select>
+            </div>
+
+            <div class="daemon-cards-grid">
+              <div class="daemon-card">
+                <div class="daemon-card-head">
+                  <span class="daemon-card-name">&#9865; Tor Daemon</span>
+                  <span class="daemon-badge" id="settings-tor-status">Checking…</span>
+                </div>
+                <div class="daemon-card-details">
+                  <span>Port: <code>127.0.0.1:9050</code></span>
+                  <span>Control: <code>127.0.0.1:9051</code></span>
+                </div>
+                <button class="btn-daemon-restart" id="btn-restart-tor-daemon">Restart Tor Daemon</button>
+              </div>
+
+              <div class="daemon-card">
+                <div class="daemon-card-head">
+                  <span class="daemon-card-name">&#9672; I2P Router</span>
+                  <span class="daemon-badge" id="settings-i2p-status">Checking…</span>
+                </div>
+                <div class="daemon-card-details">
+                  <span>HTTP Proxy: <code>127.0.0.1:4444</code></span>
+                  <span>Console: <code>127.0.0.1:7657</code></span>
+                </div>
+                <button class="btn-daemon-restart" id="btn-restart-i2p-daemon">Restart I2P Service</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Privacy & Search Panel -->
+          <div id="tab-panel-privacy" class="settings-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Privacy & Search Preferences</h3>
+              <p class="panel-desc">Configure address bar default search engine and browsing session privacy.</p>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-title">Default Search Engine</span>
+                <span class="setting-desc">Used for non-URL queries entered in the address bar.</span>
+              </div>
+              <select id="setting-search-engine" class="setting-select">
+                <option value="duckduckgo">DuckDuckGo (Clear Web)</option>
+                <option value="duckduckgo-onion">DuckDuckGo (.onion Hidden Service)</option>
+                <option value="ahmia">Ahmia Tor Search (.onion)</option>
+                <option value="searxng">SearXNG Privacy Metasearch</option>
+              </select>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-title">Smart Route Suggestions</span>
+                <span class="setting-desc">Display a banner to switch network when .onion or .i2p URLs are opened on other routes.</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="setting-route-suggestions" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-title">Clear Browsing Partition</span>
+                <span class="setting-desc">Clear cached data, cookies, and local session storage.</span>
+              </div>
+              <button id="btn-clear-cache" class="btn-warning-action">Clear Session Data</button>
+            </div>
+          </div>
+
+          <!-- 4. About Panel -->
+          <div id="tab-panel-about" class="settings-panel">
+            <div class="about-container">
+              <img src="images/logo.png" alt="DarkBrowser" class="about-logo">
+              <h3 class="about-app-name">DarkBrowser</h3>
+              <span class="about-version">Version 1.0.0</span>
+              <p class="about-desc">A Linux desktop privacy browser unifying Tor, I2P, and direct networking into one clean interface with Tor bridge obfuscation support.</p>
+              
+              <div class="about-meta-grid">
+                <div class="about-meta-item">
+                  <span class="meta-label">Tor Route:</span>
+                  <span class="meta-value">SOCKS5 127.0.0.1:9050</span>
+                </div>
+                <div class="about-meta-item">
+                  <span class="meta-label">I2P Route:</span>
+                  <span class="meta-value">HTTP 127.0.0.1:4444</span>
+                </div>
+                <div class="about-meta-item">
+                  <span class="meta-label">Tor Bridges:</span>
+                  <span class="meta-value">obfs4, Snowflake, Meek-Azure, Custom</span>
+                </div>
+                <div class="about-meta-item">
+                  <span class="meta-label">Isolation:</span>
+                  <span class="meta-value">Partition Sandbox (darkbrowser-private)</span>
+                </div>
+              </div>
+
+              <div class="about-actions">
+                <a href="#" id="link-github-repo" class="about-link-btn">View GitHub Repository ↗</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div id="settings-save-status" class="save-status-msg"></div>
+        <div class="modal-btn-group">
+          <button id="btn-cancel-settings" class="btn-modal-secondary">Cancel</button>
+          <button id="btn-save-settings" class="btn-modal-primary">Save & Apply</button>
+        </div>
+      </div>
     </div>
   </div>
 

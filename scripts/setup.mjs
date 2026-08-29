@@ -175,6 +175,61 @@ async function downloadTorBundle() {
     if (existsSync(src)) copyFileSync(src, join(GEOIP, name));
   }
   ok('GeoIP files installed from bundle');
+
+  // Check for any pluggable transports bundled with Tor expert bundle
+  const ptDirs = [
+    join(ext, 'tor', 'pluggable_transports'),
+    join(ext, 'data', 'pluggable_transports'),
+    join(ext, 'tor'),
+  ];
+  for (const ptDir of ptDirs) {
+    if (!existsSync(ptDir)) continue;
+    for (const name of ['lyrebird', 'obfs4proxy', 'snowflake-client', 'webtunnel-client', 'conjure-client']) {
+      const src = join(ptDir, name);
+      const dest = join(LBIN, name);
+      if (existsSync(src) && !existsSync(dest)) {
+        copyFileSync(src, dest);
+        chmodSync(dest, 0o755);
+        ok(`Installed ${name} transport binary from bundle`);
+      }
+    }
+  }
+}
+
+// ── Pluggable Transports ──────────────────────────────────────────────────────
+
+function setupPluggableTransports() {
+  step('Tor Pluggable Transports (Bridges)');
+
+  const ptNames = ['lyrebird', 'obfs4proxy', 'snowflake-client', 'webtunnel-client', 'conjure-client'];
+  let foundAny = false;
+
+  for (const name of ptNames) {
+    const dest = join(LBIN, name);
+    if (existsSync(dest) && binaryWorks(dest)) {
+      ok(`bin/linux/${name} already present and working`);
+      foundAny = true;
+      continue;
+    }
+
+    const sys = findSystemBinary(name);
+    if (sys) {
+      info(`Found system ${name} at ${sys}`);
+      copyFileSync(sys, dest);
+      chmodSync(dest, 0o755);
+      if (binaryWorks(dest)) {
+        ok(`Copied to bin/linux/${name}`);
+        foundAny = true;
+      } else {
+        warn(`Copied ${name} but it failed to run (missing dependencies)`);
+      }
+    }
+  }
+
+  if (!foundAny) {
+    info('No pluggable transport binaries found on system (optional).');
+    info('For obfs4 bridge support, install obfs4proxy: sudo apt install obfs4proxy');
+  }
 }
 
 // ── I2P ──────────────────────────────────────────────────────────────────────
@@ -328,6 +383,7 @@ mkdirs(LBIN, GEOIP, CFGDIR);
 
 try {
   await setupTor();
+  setupPluggableTransports();
   await setupI2p();
   writeConfigs();
   console.log(`\n  ${g(bold('All done!'))}  Run ${b('npm start')} to launch DarkBrowser.\n`);

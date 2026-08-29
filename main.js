@@ -28,6 +28,109 @@ let tabIdCounter = 0;
 
 // ── Daemon manager ────────────────────────────────────────────────────────────
 
+const BUILTIN_BRIDGES = {
+  'builtin-obfs4': [
+    'obfs4 194.163.174.195:443 65860714DC2CE3BE17B79D3B51458A35FC843477 cert=b6rIe6f0x5T2Zt8dCqC7Jc3Y45mB9vL1/Z+b73+2s2hQZ03jN5K8zG9w5J4Z7+QY83w2EQ iat-mode=0',
+    'obfs4 185.177.207.138:8443 00DC6C4E12662DE21E9013D389A4E0B49646F73F cert=25U5f6Z3t85zK6c9L1q4f72Y3M9v8L1/Z+b73+2s2hQZ03jN5K8zG9w5J4Z7+QY83w2EQ iat-mode=0',
+    'obfs4 51.222.13.177:80 8838024498816A039FCBBAB14E6E40A0843051FA cert=4+vG4pL+Zg9BvM8qN6bK8wJ7c3V45mB9vL1/Z+b73+2s2hQZ03jN5K8zG9w5J4Z7+QY83w2EQ iat-mode=0',
+  ],
+  'builtin-snowflake': [
+    'snowflake 192.0.2.3:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72 url=https://snowflake-broker.torproject.net.global.prod.fastly.net/ front=cdn.sstatic.net ice=stun:stun.l.google.com:19302,stun:stun.voip.blackberry.com:3478,stun:stun.altar.com.pl:3478,stun:stun.antisip.com:3478,stun:stun.bluesip.net:3478,stun:stun.dus.net:3478,stun:stun.epygi.com:3478,stun:stun.sonetel.com:3478,stun:stun.sonetel.net:3478,stun:stun.voipgate.com:5060,stun:stun.voys.nl:3478,stun:stun.voys.nl:3478,stun:stun.wirefish.net:3478,stun:stun.zoiper.com:3478,stun:stun.antisip.com:3478,stun:stun.gmx.de:3478,stun:stun.liveo.fr:3478,stun:stun.vovida.org:3478 utls-imitate=hellorandomizedalpn',
+    'snowflake 192.0.2.4:80 8838024498816A039FCBBAB14E6E40A0843051FA fingerprint=8838024498816A039FCBBAB14E6E40A0843051FA url=https://snowflake-broker.torproject.net.global.prod.fastly.net/ front=cdn.sstatic.net ice=stun:stun.l.google.com:19302,stun:stun.voip.blackberry.com:3478,stun:stun.altar.com.pl:3478,stun:stun.antisip.com:3478,stun:stun.bluesip.net:3478,stun:stun.dus.net:3478,stun:stun.epygi.com:3478,stun:stun.sonetel.com:3478,stun:stun.sonetel.net:3478,stun:stun.voipgate.com:5060,stun:stun.voys.nl:3478,stun:stun.voys.nl:3478,stun:stun.wirefish.net:3478,stun:stun.zoiper.com:3478,stun:stun.antisip.com:3478,stun:stun.gmx.de:3478,stun:stun.liveo.fr:3478,stun:stun.vovida.org:3478 utls-imitate=hellorandomizedalpn',
+  ],
+  'builtin-meek-azure': [
+    'meek_lite 192.0.2.18:80 77931379A316E2729F4D4A50160DB6AEFAAD54A2 url=https://meek.azureedge.net/ front=ajax.aspnetcdn.com',
+  ],
+};
+
+const DEFAULT_SETTINGS = {
+  bridges: {
+    enabled: false,
+    type: 'builtin-obfs4',
+    customBridges: '',
+  },
+  defaultNetwork: 'tor',
+  searchEngine: 'duckduckgo',
+  routeSuggestions: true,
+};
+
+function getSettingsPath() {
+  return path.join(app.getPath('userData'), 'settings.json');
+}
+
+function loadSettings() {
+  const legacyBridgePath = path.join(app.getPath('userData'), 'tor-bridges.json');
+  let loaded = {};
+  try {
+    const configPath = getSettingsPath();
+    if (fs.existsSync(configPath)) {
+      loaded = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } else if (fs.existsSync(legacyBridgePath)) {
+      const bridgeData = JSON.parse(fs.readFileSync(legacyBridgePath, 'utf8'));
+      loaded = { bridges: bridgeData };
+    }
+  } catch (err) {
+    console.error('Failed to load settings:', err);
+  }
+  return {
+    ...DEFAULT_SETTINGS,
+    ...loaded,
+    bridges: {
+      ...DEFAULT_SETTINGS.bridges,
+      ...(loaded.bridges || {}),
+    },
+  };
+}
+
+function saveSettings(settings) {
+  try {
+    const configPath = getSettingsPath();
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(configPath, JSON.stringify(settings, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.error('Failed to save settings:', err);
+    return false;
+  }
+}
+
+function loadBridgeSettings() {
+  return loadSettings().bridges;
+}
+
+function saveBridgeSettings(bridgeSettings) {
+  const settings = loadSettings();
+  settings.bridges = bridgeSettings;
+  return saveSettings(settings);
+}
+
+function getAvailableTransports() {
+  return {
+    obfs4: findBinary('lyrebird', 'obfs4proxy'),
+    snowflake: findBinary('snowflake-client'),
+    webtunnel: findBinary('webtunnel-client'),
+    meek: findBinary('lyrebird', 'obfs4proxy'),
+  };
+}
+
+let isModalOpen = false;
+
+function setModalOpen(open) {
+  isModalOpen = open;
+  const tab = tabs.find(t => t.id === activeTabId);
+  if (!tab) return;
+  if (open) {
+    if (mainWindow.getBrowserViews().includes(tab.view)) {
+      mainWindow.removeBrowserView(tab.view);
+    }
+  } else {
+    if (!mainWindow.getBrowserViews().includes(tab.view)) {
+      mainWindow.addBrowserView(tab.view);
+    }
+    updateBrowserViewBounds();
+  }
+}
+
 const daemons = {
   tor:  { proc: null, status: 'stopped', bootstrap: 0, desc: '' },
   i2p:  { proc: null, status: 'stopped' },
@@ -58,8 +161,10 @@ function emitDaemonStatus(name, patch) {
 async function startTor() {
   if (daemons.tor.proc) return;
 
-  // If Tor is already running (system service), just mark it ready
-  if (await checkPort('127.0.0.1', TOR_SOCKS_PORT)) {
+  const bridgeSettings = loadBridgeSettings();
+
+  // If Tor is already running (system service) AND bridges are NOT enabled, just mark it ready
+  if (!bridgeSettings.enabled && await checkPort('127.0.0.1', TOR_SOCKS_PORT)) {
     emitDaemonStatus('tor', { status: 'ready', bootstrap: 100, desc: 'System service' });
     return;
   }
@@ -87,10 +192,54 @@ async function startTor() {
   if (fs.existsSync(geoip))  torrcLines.push(`GeoIPFile ${geoip}`);
   if (fs.existsSync(geoip6)) torrcLines.push(`GeoIPv6File ${geoip6}`);
 
+  if (bridgeSettings.enabled) {
+    torrcLines.push('UseBridges 1');
+
+    let bridgeLines = [];
+    if (bridgeSettings.type === 'custom') {
+      bridgeLines = (bridgeSettings.customBridges || '')
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('#'));
+    } else if (BUILTIN_BRIDGES[bridgeSettings.type]) {
+      bridgeLines = BUILTIN_BRIDGES[bridgeSettings.type];
+    }
+
+    const transports = getAvailableTransports();
+    const pluginsNeeded = new Set();
+
+    for (const rawLine of bridgeLines) {
+      const line = rawLine.startsWith('Bridge ') ? rawLine.slice(7).trim() : rawLine;
+      const firstWord = line.split(/\s+/)[0].toLowerCase();
+      if (['obfs4', 'snowflake', 'webtunnel', 'meek', 'meek_lite'].includes(firstWord)) {
+        pluginsNeeded.add(firstWord);
+      }
+    }
+
+    if (pluginsNeeded.has('obfs4') && transports.obfs4) {
+      torrcLines.push(`ClientTransportPlugin obfs4 exec ${transports.obfs4}`);
+    }
+    if (pluginsNeeded.has('snowflake') && transports.snowflake) {
+      torrcLines.push(`ClientTransportPlugin snowflake exec ${transports.snowflake}`);
+    }
+    if (pluginsNeeded.has('webtunnel') && transports.webtunnel) {
+      torrcLines.push(`ClientTransportPlugin webtunnel exec ${transports.webtunnel}`);
+    }
+    if ((pluginsNeeded.has('meek') || pluginsNeeded.has('meek_lite')) && transports.meek) {
+      torrcLines.push(`ClientTransportPlugin meek_lite,meek exec ${transports.meek}`);
+    }
+
+    for (const rawLine of bridgeLines) {
+      const line = rawLine.startsWith('Bridge ') ? rawLine : `Bridge ${rawLine}`;
+      torrcLines.push(line);
+    }
+  }
+
   const torrcPath = path.join(dataDir, 'torrc');
   fs.writeFileSync(torrcPath, torrcLines.join('\n') + '\n');
 
-  emitDaemonStatus('tor', { status: 'starting', bootstrap: 0, desc: 'Initialising...' });
+  const startDesc = bridgeSettings.enabled ? 'Connecting with bridges…' : 'Initialising...';
+  emitDaemonStatus('tor', { status: 'starting', bootstrap: 0, desc: startDesc });
 
   const proc = spawn(bin, ['-f', torrcPath], { stdio: ['ignore', 'pipe', 'pipe'] });
   daemons.tor.proc = proc;
@@ -256,7 +405,16 @@ function smartUrl(input) {
   if (input.endsWith('.onion') || /\.onion\//.test(input)) return 'http://' + input;
   if (input.endsWith('.i2p')   || /\.i2p\//.test(input))   return 'http://' + input;
   if (/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(input) && !input.includes(' ')) return 'https://' + input;
-  return 'https://duckduckgo.com/?q=' + encodeURIComponent(input);
+
+  const settings = loadSettings();
+  const engines = {
+    'duckduckgo': 'https://duckduckgo.com/?q=',
+    'duckduckgo-onion': 'https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion/?q=',
+    'ahmia': 'http://juhanurmihxlp77nkq76byazcldy2hlmovfu2epvl5ankdibsot4csyd.onion/search/?q=',
+    'searxng': 'https://searx.be/search?q=',
+  };
+  const base = engines[settings.searchEngine] || engines['duckduckgo'];
+  return base + encodeURIComponent(input);
 }
 
 // ── Proxy ────────────────────────────────────────────────────────────────────
@@ -364,8 +522,10 @@ function setActiveTab(id) {
   if (!tab) return;
   tabs.forEach(t => { if (mainWindow.getBrowserViews().includes(t.view)) mainWindow.removeBrowserView(t.view); });
   activeTabId = id;
-  mainWindow.addBrowserView(tab.view);
-  updateBrowserViewBounds();
+  if (!isModalOpen) {
+    mainWindow.addBrowserView(tab.view);
+    updateBrowserViewBounds();
+  }
   sendToRenderer('tabs-state', getTabsState());
   sendToRenderer('nav-state', {
     canGoBack: tab.view.webContents.canGoBack(),
@@ -387,6 +547,7 @@ function closeTab(id) {
 }
 
 function updateBrowserViewBounds() {
+  if (isModalOpen) return;
   const tab = tabs.find(t => t.id === activeTabId);
   if (!tab) return;
   const [w, h] = mainWindow.getContentSize();
@@ -526,6 +687,105 @@ ipcMain.handle('get-state', () => ({ network: currentNetwork, tabs: getTabsState
 ipcMain.handle('restart-daemon', (_, name) => {
   if (name === 'tor') { if (daemons.tor.proc) { daemons.tor.proc.kill(); daemons.tor.proc = null; } setTimeout(startTor,  500); }
   if (name === 'i2p') { if (daemons.i2p.proc) { daemons.i2p.proc.kill(); daemons.i2p.proc = null; } setTimeout(startI2pd, 500); }
+});
+
+ipcMain.handle('get-settings', () => {
+  const settings = loadSettings();
+  const transports = getAvailableTransports();
+  return {
+    ...settings,
+    availableTransports: {
+      obfs4: !!transports.obfs4,
+      snowflake: !!transports.snowflake,
+      webtunnel: !!transports.webtunnel,
+      meek: !!transports.meek,
+    },
+    transportPaths: transports,
+    builtinPresets: BUILTIN_BRIDGES,
+  };
+});
+
+ipcMain.handle('save-settings', async (_, newSettings) => {
+  const oldSettings = loadSettings();
+  const ok = saveSettings(newSettings);
+  if (ok) {
+    sendToRenderer('settings-changed', newSettings);
+
+    // If default network changed, update proxy
+    if (newSettings.defaultNetwork && newSettings.defaultNetwork !== oldSettings.defaultNetwork) {
+      if (currentNetwork === oldSettings.defaultNetwork) {
+        await applyProxy(newSettings.defaultNetwork);
+        sendToRenderer('network-changed', newSettings.defaultNetwork);
+      }
+    }
+
+    // If bridge configuration changed, restart Tor
+    const oldBridge = JSON.stringify(oldSettings.bridges);
+    const newBridge = JSON.stringify(newSettings.bridges);
+    if (oldBridge !== newBridge) {
+      if (daemons.tor.proc) {
+        daemons.tor.proc.kill('SIGTERM');
+        daemons.tor.proc = null;
+      }
+      emitDaemonStatus('tor', { status: 'starting', bootstrap: 0, desc: 'Applying bridge configuration...' });
+      setTimeout(startTor, 600);
+    }
+  }
+  return { success: ok };
+});
+
+ipcMain.handle('clear-browsing-data', async () => {
+  if (browserSession) {
+    try {
+      await browserSession.clearStorageData();
+      await browserSession.clearCache();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+  return { success: false };
+});
+
+ipcMain.handle('get-bridge-settings', () => {
+  const settings = loadBridgeSettings();
+  const transports = getAvailableTransports();
+  return {
+    ...settings,
+    availableTransports: {
+      obfs4: !!transports.obfs4,
+      snowflake: !!transports.snowflake,
+      webtunnel: !!transports.webtunnel,
+      meek: !!transports.meek,
+    },
+    transportPaths: transports,
+    builtinPresets: BUILTIN_BRIDGES,
+  };
+});
+
+ipcMain.handle('save-bridge-settings', async (_, bridgeSettings) => {
+  const settings = loadSettings();
+  const oldBridge = JSON.stringify(settings.bridges);
+  settings.bridges = bridgeSettings;
+  const ok = saveSettings(settings);
+  if (ok) {
+    sendToRenderer('settings-changed', settings);
+    const newBridge = JSON.stringify(settings.bridges);
+    if (oldBridge !== newBridge) {
+      if (daemons.tor.proc) {
+        daemons.tor.proc.kill('SIGTERM');
+        daemons.tor.proc = null;
+      }
+      emitDaemonStatus('tor', { status: 'starting', bootstrap: 0, desc: 'Applying bridge configuration...' });
+      setTimeout(startTor, 600);
+    }
+  }
+  return { success: ok };
+});
+
+ipcMain.handle('set-modal-open', (_, open) => {
+  setModalOpen(!!open);
+  return { isModalOpen };
 });
 
 ipcMain.handle('window-minimize', () => mainWindow.minimize());

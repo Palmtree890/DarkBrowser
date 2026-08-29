@@ -271,7 +271,289 @@ db.on('network-status', ({ tor, i2p }) => {
   }
 });
 
-db.on('daemon-status', updateDaemonStatus);
+// ── Settings & Tor Bridges Configuration ─────────────────────────────────────
+
+const btnSettings            = document.getElementById('btn-settings');
+const settingsBridgeDot      = document.getElementById('settings-bridge-dot');
+const settingsModalOverlay   = document.getElementById('settings-modal-overlay');
+const btnCloseSettings       = document.getElementById('btn-close-settings');
+const btnCancelSettings      = document.getElementById('btn-cancel-settings');
+const btnSaveSettings        = document.getElementById('btn-save-settings');
+const settingsTabBtns        = document.querySelectorAll('.settings-tab-btn');
+const settingsPanels         = document.querySelectorAll('.settings-panel');
+const sidebarBridgeBadge     = document.getElementById('sidebar-bridge-badge');
+
+// Bridges Tab Elements
+const bridgeEnableToggle     = document.getElementById('bridge-enable-toggle');
+const bridgeOptionsContainer = document.getElementById('bridge-options-container');
+const customBridgeBox        = document.getElementById('custom-bridge-box');
+const customBridgesText      = document.getElementById('custom-bridges-text');
+const bridgeRadioCards       = document.querySelectorAll('.bridge-radio-card');
+const tagObfs4               = document.getElementById('tag-obfs4');
+const tagSnowflake           = document.getElementById('tag-snowflake');
+const linkTorBridges         = document.getElementById('link-tor-bridges');
+
+// Networks Tab Elements
+const settingDefaultNetwork  = document.getElementById('setting-default-network');
+const settingsTorStatus      = document.getElementById('settings-tor-status');
+const settingsI2pStatus      = document.getElementById('settings-i2p-status');
+const btnRestartTorDaemon    = document.getElementById('btn-restart-tor-daemon');
+const btnRestartI2pDaemon    = document.getElementById('btn-restart-i2p-daemon');
+
+// Privacy & Search Tab Elements
+const settingSearchEngine     = document.getElementById('setting-search-engine');
+const settingRouteSuggestions = document.getElementById('setting-route-suggestions');
+const btnClearCache           = document.getElementById('btn-clear-cache');
+
+// About Tab Elements
+const linkGithubRepo         = document.getElementById('link-github-repo');
+const settingsSaveStatus     = document.getElementById('settings-save-status');
+
+function updateBridgeIndicators(enabled) {
+  if (settingsBridgeDot) {
+    settingsBridgeDot.classList.toggle('hidden', !enabled);
+  }
+  if (sidebarBridgeBadge) {
+    sidebarBridgeBadge.textContent = enabled ? 'ON' : 'OFF';
+    sidebarBridgeBadge.className = 'tab-badge ' + (enabled ? 'on' : '');
+  }
+}
+
+function switchSettingsTab(tabName) {
+  settingsTabBtns.forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tabName);
+  });
+  settingsPanels.forEach(p => {
+    p.classList.toggle('active', p.id === `tab-panel-${tabName}`);
+  });
+}
+
+settingsTabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    switchSettingsTab(btn.dataset.tab);
+  });
+});
+
+async function openSettingsModal(tab = 'bridges') {
+  settingsSaveStatus.textContent = '';
+  settingsSaveStatus.className = 'save-status-msg';
+  switchSettingsTab(tab);
+
+  try {
+    const settings = await db.getSettings();
+
+    // 1. Bridges settings
+    const bridgeConfig = settings.bridges || {};
+    bridgeEnableToggle.checked = !!bridgeConfig.enabled;
+
+    const radio = document.querySelector(`input[name="bridgeType"][value="${bridgeConfig.type || 'builtin-obfs4'}"]`);
+    if (radio) radio.checked = true;
+
+    customBridgesText.value = bridgeConfig.customBridges || '';
+    updateRadioCardStyles();
+    toggleBridgeOptionsUI(bridgeConfig.enabled);
+    customBridgeBox.classList.toggle('hidden', bridgeConfig.type !== 'custom');
+
+    // Transports diagnostic tags
+    if (settings.availableTransports) {
+      const hasObfs4 = settings.availableTransports.obfs4;
+      const hasSnowflake = settings.availableTransports.snowflake;
+
+      if (tagObfs4) {
+        tagObfs4.textContent = hasObfs4 ? '✓ obfs4: Ready' : '⚠ obfs4: Missing binary';
+        tagObfs4.className = 'diag-tag ' + (hasObfs4 ? 'ready' : 'missing');
+      }
+      if (tagSnowflake) {
+        tagSnowflake.textContent = hasSnowflake ? '✓ snowflake: Ready' : '○ snowflake: Fallback';
+        tagSnowflake.className = 'diag-tag ' + (hasSnowflake ? 'ready' : '');
+      }
+    }
+
+    // 2. Network settings
+    if (settingDefaultNetwork && settings.defaultNetwork) {
+      settingDefaultNetwork.value = settings.defaultNetwork;
+    }
+
+    // 3. Privacy & Search settings
+    if (settingSearchEngine && settings.searchEngine) {
+      settingSearchEngine.value = settings.searchEngine;
+    }
+    if (settingRouteSuggestions) {
+      settingRouteSuggestions.checked = settings.routeSuggestions !== false;
+    }
+
+    updateBridgeIndicators(bridgeConfig.enabled);
+  } catch (err) {
+    console.error('Failed to load settings:', err);
+  }
+
+  // Remove browser view underneath to prevent covering modal
+  await db.setModalOpen(true);
+  settingsModalOverlay.classList.remove('hidden');
+}
+
+async function closeSettingsModal() {
+  settingsModalOverlay.classList.add('hidden');
+  await db.setModalOpen(false);
+}
+
+function toggleBridgeOptionsUI(enabled) {
+  if (bridgeOptionsContainer) {
+    bridgeOptionsContainer.classList.toggle('disabled-section', !enabled);
+  }
+}
+
+function updateRadioCardStyles() {
+  bridgeRadioCards.forEach(card => {
+    const radio = card.querySelector('input[type="radio"]');
+    card.classList.toggle('selected', !!radio?.checked);
+  });
+}
+
+// Modal Event Listeners
+btnSettings.addEventListener('click', () => openSettingsModal('bridges'));
+btnCloseSettings.addEventListener('click', closeSettingsModal);
+btnCancelSettings.addEventListener('click', closeSettingsModal);
+
+settingsModalOverlay.addEventListener('click', e => {
+  if (e.target === settingsModalOverlay) closeSettingsModal();
+});
+
+bridgeEnableToggle.addEventListener('change', () => {
+  toggleBridgeOptionsUI(bridgeEnableToggle.checked);
+});
+
+bridgeRadioCards.forEach(card => {
+  const radio = card.querySelector('input[type="radio"]');
+  card.addEventListener('click', () => {
+    if (radio) {
+      radio.checked = true;
+      updateRadioCardStyles();
+      customBridgeBox.classList.toggle('hidden', radio.value !== 'custom');
+    }
+  });
+});
+
+linkTorBridges?.addEventListener('click', e => {
+  e.preventDefault();
+  closeSettingsModal();
+  db.newTab('https://bridges.torproject.org');
+});
+
+linkGithubRepo?.addEventListener('click', e => {
+  e.preventDefault();
+  closeSettingsModal();
+  db.newTab('https://github.com/Palmtree890/DarkBrowser');
+});
+
+btnRestartTorDaemon?.addEventListener('click', () => {
+  db.restartDaemon('tor');
+  settingsSaveStatus.textContent = 'Restarting Tor daemon...';
+  settingsSaveStatus.className = 'save-status-msg';
+});
+
+btnRestartI2pDaemon?.addEventListener('click', () => {
+  db.restartDaemon('i2p');
+  settingsSaveStatus.textContent = 'Restarting I2P daemon...';
+  settingsSaveStatus.className = 'save-status-msg';
+});
+
+btnClearCache?.addEventListener('click', async () => {
+  btnClearCache.disabled = true;
+  btnClearCache.textContent = 'Clearing…';
+  const res = await db.clearBrowsingData();
+  if (res?.success) {
+    btnClearCache.textContent = 'Data Cleared!';
+    settingsSaveStatus.textContent = 'Browsing partition cache & session data cleared.';
+    settingsSaveStatus.className = 'save-status-msg success';
+  } else {
+    btnClearCache.textContent = 'Clear Session Data';
+    settingsSaveStatus.textContent = 'Failed to clear session data.';
+    settingsSaveStatus.className = 'save-status-msg error';
+  }
+  setTimeout(() => {
+    btnClearCache.disabled = false;
+    btnClearCache.textContent = 'Clear Session Data';
+  }, 2000);
+});
+
+btnSaveSettings.addEventListener('click', async () => {
+  const bridgeEnabled = bridgeEnableToggle.checked;
+  const selectedRadio = document.querySelector('input[name="bridgeType"]:checked');
+  const bridgeType = selectedRadio ? selectedRadio.value : 'builtin-obfs4';
+  const customBridges = customBridgesText.value.trim();
+  const defaultNetwork = settingDefaultNetwork ? settingDefaultNetwork.value : 'tor';
+  const searchEngine = settingSearchEngine ? settingSearchEngine.value : 'duckduckgo';
+  const routeSuggestions = settingRouteSuggestions ? settingRouteSuggestions.checked : true;
+
+  if (bridgeEnabled && bridgeType === 'custom' && !customBridges) {
+    settingsSaveStatus.textContent = 'Please provide at least one bridge line.';
+    settingsSaveStatus.className = 'save-status-msg error';
+    switchSettingsTab('bridges');
+    return;
+  }
+
+  btnSaveSettings.disabled = true;
+  btnSaveSettings.textContent = 'Saving…';
+  settingsSaveStatus.textContent = 'Applying configuration...';
+  settingsSaveStatus.className = 'save-status-msg';
+
+  try {
+    const payload = {
+      bridges: {
+        enabled: bridgeEnabled,
+        type: bridgeType,
+        customBridges,
+      },
+      defaultNetwork,
+      searchEngine,
+      routeSuggestions,
+    };
+
+    const res = await db.saveSettings(payload);
+    if (res?.success) {
+      updateBridgeIndicators(bridgeEnabled);
+      settingsSaveStatus.textContent = 'Settings saved successfully.';
+      settingsSaveStatus.className = 'save-status-msg success';
+      setTimeout(() => {
+        btnSaveSettings.disabled = false;
+        btnSaveSettings.textContent = 'Save & Apply';
+        closeSettingsModal();
+      }, 700);
+    } else {
+      settingsSaveStatus.textContent = 'Failed to save settings.';
+      settingsSaveStatus.className = 'save-status-msg error';
+      btnSaveSettings.disabled = false;
+      btnSaveSettings.textContent = 'Save & Apply';
+    }
+  } catch (err) {
+    settingsSaveStatus.textContent = 'Error: ' + err.message;
+    settingsSaveStatus.className = 'save-status-msg error';
+    btnSaveSettings.disabled = false;
+    btnSaveSettings.textContent = 'Save & Apply';
+  }
+});
+
+db.on('settings-changed', settings => {
+  if (settings?.bridges) {
+    updateBridgeIndicators(settings.bridges.enabled);
+  }
+});
+
+// Update daemon badges in settings modal
+const originalUpdateDaemonStatus = updateDaemonStatus;
+updateDaemonStatus = function(data) {
+  originalUpdateDaemonStatus(data);
+  const { name, status, bootstrap } = data;
+  if (name === 'tor' && settingsTorStatus) {
+    settingsTorStatus.textContent = status === 'ready' ? 'Ready' : (status === 'starting' ? (bootstrap ? `${bootstrap}%` : 'Starting') : (status === 'missing' ? 'Not Found' : 'Stopped'));
+    settingsTorStatus.className = 'daemon-badge ' + (status === 'ready' ? 'ready' : (status === 'starting' ? 'starting' : 'stopped'));
+  }
+  if (name === 'i2p' && settingsI2pStatus) {
+    settingsI2pStatus.textContent = status === 'ready' ? 'Ready' : (status === 'starting' ? 'Starting' : (status === 'missing' ? 'Not Found' : 'Stopped'));
+    settingsI2pStatus.className = 'daemon-badge ' + (status === 'ready' ? 'ready' : (status === 'starting' ? 'starting' : 'stopped'));
+  }
+};
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
@@ -284,6 +566,12 @@ async function init() {
   document.getElementById('dot-tor').className   = 'net-dot ' + (status.tor ? 'online-tor' : 'offline');
   document.getElementById('dot-i2p').className   = 'net-dot ' + (status.i2p ? 'online-i2p' : 'offline');
   document.getElementById('dot-direct').className = 'net-dot online-direct';
+
+  // Seed bridge indicator
+  try {
+    const settings = await db.getSettings();
+    updateBridgeIndicators(settings?.bridges?.enabled);
+  } catch { /* ignore */ }
 }
 
 init();
