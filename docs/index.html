@@ -35,7 +35,7 @@
     .network-bar { display:flex; gap:8px; margin-top:58px; flex-wrap:wrap; }
     .network { min-width:135px; padding:11px 14px; border:1px solid var(--line); background:var(--panel); color:var(--muted); font-size:.78rem; }
     .dot { display:inline-block; width:7px; height:7px; margin-right:8px; border-radius:50%; background:var(--green); box-shadow:0 0 9px var(--green); }
-    section { padding:62px 0; border-top:1px solid var(--line); }
+    section { padding:62px clamp(24px,7vw,82px); border-top:1px solid var(--line); }
     .section-label { color:var(--green); font-size:.76rem; letter-spacing:.1em; }
     h2 { margin:13px 0; font-size:clamp(1.7rem,3vw,2.35rem); letter-spacing:-.055em; text-transform:uppercase; }
     .section-lead { max-width:670px; color:var(--muted); font-family:ui-sans-serif,system-ui,sans-serif; line-height:1.7; }
@@ -53,7 +53,7 @@
     select { min-height:45px; border:1px solid var(--line); padding:0 12px; background:#050505; color:var(--text); font:inherit; font-size:.8rem; }
     pre code::before { content:"$ "; color:var(--muted); } pre code { line-height:1.8; }
     footer { padding:32px 0 48px; color:var(--muted); font-size:.76rem; line-height:1.6; }
-    @media (max-width:700px) { nav { padding:18px 0; } .brand::before { display:none; } .terminal { margin:0 -1px; } .hero { padding:52px 25px; } .cards { grid-template-columns:1fr; } .download-panel { grid-template-columns:1fr; } }
+    @media (max-width:700px) { nav { padding:18px 0; } .brand::before { display:none; } .terminal { margin:0 -1px; } .hero { padding:52px 25px; } section { padding:52px 25px; } .cards { grid-template-columns:1fr; } .download-panel { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
