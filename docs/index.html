@@ -4,36 +4,51 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="DarkBrowser is a Linux desktop browser with Tor and I2P network support.">
-  <title>DarkBrowser — Private browsing, your way</title>
+  <title>DarkBrowser — Private routes. Local control.</title>
   <style>
-    :root { color-scheme: dark; --bg:#08080f; --panel:#121220; --text:#f5f3ff; --muted:#b0adc4; --purple:#a855f7; --cyan:#22d3ee; }
+    :root { color-scheme:dark; --bg:#020604; --panel:#07110c; --panel-2:#0b1810; --line:#1c5030; --text:#d6ffe4; --muted:#82aa90; --green:#52ff8f; --dim:#237747; --amber:#f5c451; }
     * { box-sizing:border-box; }
-    body { margin:0; min-width:320px; font-family:Inter,ui-sans-serif,system-ui,sans-serif; color:var(--text); background:radial-gradient(circle at 80% -10%,#40205d 0,transparent 35%),var(--bg); }
-    .wrap { width:min(1120px,calc(100% - 40px)); margin:auto; }
-    nav { display:flex; align-items:center; justify-content:space-between; padding:24px 0; }
-    .brand { color:var(--text); font-size:1.1rem; font-weight:800; letter-spacing:.02em; text-decoration:none; }
-    .brand b { color:var(--purple); }
-    .link { color:var(--muted); text-decoration:none; font-weight:600; }
-    .hero { padding:90px 0 105px; text-align:center; }
-    .eyebrow { color:var(--cyan); font-weight:800; font-size:.8rem; letter-spacing:.15em; text-transform:uppercase; }
-    h1 { max-width:760px; margin:20px auto; font-size:clamp(2.6rem,7vw,5.5rem); line-height:1; letter-spacing:-.06em; }
-    .lead { max-width:630px; margin:0 auto 34px; color:var(--muted); font-size:1.18rem; line-height:1.65; }
-    .actions { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
-    .button { display:inline-block; border-radius:10px; padding:13px 19px; background:var(--purple); color:white; font-weight:800; text-decoration:none; }
-    .button.secondary { background:transparent; border:1px solid #403d58; color:var(--text); }
-    .network-bar { display:flex; gap:10px; justify-content:center; margin-top:56px; flex-wrap:wrap; }
-    .network { padding:11px 15px; min-width:120px; border:1px solid #302d46; border-radius:9px; background:#10101d; color:var(--muted); font-size:.85rem; font-weight:800; }
-    .dot { display:inline-block; width:8px; height:8px; margin-right:7px; border-radius:50%; background:var(--purple); box-shadow:0 0 10px var(--purple); }
-    section { padding:70px 0; border-top:1px solid #242139; }
-    h2 { margin:0 0 14px; font-size:2rem; letter-spacing:-.04em; }
-    .section-lead { max-width:600px; color:var(--muted); line-height:1.65; }
-    .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:32px; }
-    .card { padding:25px; border:1px solid #302d46; border-radius:14px; background:linear-gradient(145deg,#171626,#0f0f1b); }
-    .card h3 { margin:0 0 9px; }
-    .card p { margin:0; color:var(--muted); line-height:1.58; }
-    pre { overflow:auto; margin-top:26px; padding:19px; border-radius:12px; background:#05050a; border:1px solid #2a2740; color:#d8b4fe; }
-    footer { padding:35px 0 50px; color:#7e7a95; font-size:.9rem; }
-    @media (max-width:700px) { .hero { padding:60px 0 75px; } .cards { grid-template-columns:1fr; } }
+    body { min-width:320px; margin:0; font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; color:var(--text); background-color:var(--bg); background-image:linear-gradient(rgba(82,255,143,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(82,255,143,.045) 1px,transparent 1px),radial-gradient(circle at 50% 0,rgba(28,104,55,.22),transparent 40%); background-size:32px 32px,32px 32px,auto; }
+    body::after { position:fixed; inset:0; z-index:2; pointer-events:none; content:""; background:repeating-linear-gradient(0deg,rgba(0,0,0,.14),rgba(0,0,0,.14) 1px,transparent 1px,transparent 4px); mix-blend-mode:soft-light; }
+    .wrap { width:min(1120px,calc(100% - 32px)); margin:auto; }
+    nav { display:flex; align-items:center; justify-content:space-between; padding:25px 0; }
+    .brand { color:var(--green); font-size:1rem; font-weight:700; letter-spacing:.06em; text-decoration:none; text-shadow:0 0 12px rgba(82,255,143,.65); }
+    .brand::before { content:"root@darkbrowser:~$ "; color:var(--muted); font-weight:400; }
+    .brand b { color:var(--text); }
+    .link { color:var(--green); text-decoration:none; font-size:.82rem; border-bottom:1px solid var(--dim); padding-bottom:3px; }
+    .link:hover { color:#fff; border-color:var(--green); }
+    .terminal { border:1px solid var(--line); background:rgba(4,13,8,.94); box-shadow:0 0 0 1px rgba(82,255,143,.05),0 25px 90px rgba(0,0,0,.65),inset 0 0 80px rgba(32,124,56,.05); }
+    .terminal-head { display:flex; align-items:center; gap:8px; height:43px; padding:0 15px; border-bottom:1px solid var(--line); color:var(--muted); font-size:.73rem; }
+    .lights { display:flex; gap:6px; margin-right:8px; }
+    .lights i { display:block; width:8px; height:8px; border-radius:50%; background:var(--dim); }
+    .lights i:nth-child(2) { background:var(--amber); } .lights i:nth-child(3) { background:var(--green); }
+    .hero { padding:78px clamp(24px,7vw,82px) 68px; }
+    .eyebrow { color:var(--green); font-size:.76rem; letter-spacing:.13em; text-transform:uppercase; }
+    .eyebrow::before { content:"[ "; color:var(--muted); } .eyebrow::after { content:" ]"; color:var(--muted); }
+    h1 { max-width:800px; margin:22px 0; font-size:clamp(2.3rem,6vw,5.25rem); line-height:.98; letter-spacing:-.075em; text-transform:uppercase; text-shadow:0 0 30px rgba(82,255,143,.22); }
+    h1 span { color:var(--green); }
+    .lead { max-width:690px; margin:0 0 35px; color:var(--muted); font-family:ui-sans-serif,system-ui,sans-serif; font-size:1.05rem; line-height:1.7; }
+    .actions { display:flex; gap:13px; flex-wrap:wrap; }
+    .button { display:inline-block; border:1px solid var(--green); padding:13px 17px; background:var(--green); color:#001b0b; font-size:.86rem; font-weight:800; text-decoration:none; text-transform:uppercase; letter-spacing:.04em; box-shadow:0 0 22px rgba(82,255,143,.18); }
+    .button::before { content:"$ "; } .button:hover { background:#b1ffca; }
+    .button.secondary { border-color:var(--line); background:transparent; color:var(--green); box-shadow:none; }
+    .network-bar { display:flex; gap:8px; margin-top:58px; flex-wrap:wrap; }
+    .network { min-width:135px; padding:11px 14px; border:1px solid var(--line); background:var(--panel); color:var(--muted); font-size:.78rem; }
+    .dot { display:inline-block; width:7px; height:7px; margin-right:8px; border-radius:50%; background:var(--green); box-shadow:0 0 9px var(--green); }
+    section { padding:62px 0; border-top:1px solid var(--line); }
+    .section-label { color:var(--green); font-size:.76rem; letter-spacing:.1em; }
+    h2 { margin:13px 0; font-size:clamp(1.7rem,3vw,2.35rem); letter-spacing:-.055em; text-transform:uppercase; }
+    .section-lead { max-width:670px; color:var(--muted); font-family:ui-sans-serif,system-ui,sans-serif; line-height:1.7; }
+    .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:30px; }
+    .card { position:relative; padding:24px; border:1px solid var(--line); background:rgba(7,17,12,.76); }
+    .card::before { content:"// 0"; display:block; margin-bottom:28px; color:var(--dim); font-size:.72rem; }
+    .card:nth-child(2)::before { content:"// 01"; } .card:nth-child(3)::before { content:"// 02"; }
+    .card h3 { margin:0 0 10px; color:var(--green); font-size:1.05rem; text-transform:uppercase; }
+    .card p { margin:0; color:var(--muted); font-family:ui-sans-serif,system-ui,sans-serif; font-size:.91rem; line-height:1.6; }
+    pre { overflow:auto; margin-top:26px; padding:20px; border:1px solid var(--line); background:#010301; color:var(--green); box-shadow:inset 4px 0 0 var(--dim); }
+    pre code::before { content:"$ "; color:var(--muted); } pre code { line-height:1.8; }
+    footer { padding:32px 0 48px; color:var(--muted); font-size:.76rem; line-height:1.6; }
+    @media (max-width:700px) { nav { padding:18px 0; } .brand::before { display:none; } .terminal { margin:0 -1px; } .hero { padding:52px 25px; } .cards { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -42,10 +57,11 @@
       <a class="brand" href="/">Dark<b>Browser</b></a>
       <a class="link" href="https://github.com/Palmtree890/darkbrowser">View on GitHub ↗</a>
     </nav>
-    <main>
+    <main class="terminal">
+      <div class="terminal-head"><span class="lights"><i></i><i></i><i></i></span> darkbrowser — secure shell</div>
       <div class="hero">
         <div class="eyebrow">Linux desktop browser</div>
-        <h1>Private browsing, on your terms.</h1>
+        <h1>Private routes.<br><span>Local control.</span></h1>
         <p class="lead">DarkBrowser brings Tor, I2P, and direct browsing into one focused desktop interface. Select a network, open a tab, and stay in control of how you connect.</p>
         <div class="actions">
           <a class="button" href="https://github.com/Palmtree890/darkbrowser/releases">Download releases ↗</a>
@@ -58,6 +74,7 @@
         </div>
       </div>
       <section>
+        <div class="section-label">// NETWORK MODES</div>
         <h2>One browser, three routes.</h2>
         <p class="section-lead">Switch routes from the toolbar. DarkBrowser manages local Tor and I2P services, gives each its status, and recognizes `.onion` and `.i2p` addresses.</p>
         <div class="cards">
@@ -67,8 +84,9 @@
         </div>
       </section>
       <section>
+        <div class="section-label">// BUILD FROM SOURCE</div>
         <h2>Build it yourself.</h2>
-        <p class="section-lead">DarkBrowser packages as both an AppImage and a Debian package on Linux x86_64.</p>
+        <p class="section-lead">DarkBrowser packages as AppImage, Debian, and RPM formats on Linux x86_64.</p>
         <pre><code>npm ci
 npm run setup
 npm run build</code></pre>
