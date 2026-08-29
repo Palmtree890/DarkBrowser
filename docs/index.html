@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DarkBrowser is a Linux desktop browser with Tor and I2P network support.">
+  <title>DarkBrowser — Private browsing, your way</title>
+  <style>
+    :root { color-scheme: dark; --bg:#08080f; --panel:#121220; --text:#f5f3ff; --muted:#b0adc4; --purple:#a855f7; --cyan:#22d3ee; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-width:320px; font-family:Inter,ui-sans-serif,system-ui,sans-serif; color:var(--text); background:radial-gradient(circle at 80% -10%,#40205d 0,transparent 35%),var(--bg); }
+    .wrap { width:min(1120px,calc(100% - 40px)); margin:auto; }
+    nav { display:flex; align-items:center; justify-content:space-between; padding:24px 0; }
+    .brand { color:var(--text); font-size:1.1rem; font-weight:800; letter-spacing:.02em; text-decoration:none; }
+    .brand b { color:var(--purple); }
+    .link { color:var(--muted); text-decoration:none; font-weight:600; }
+    .hero { padding:90px 0 105px; text-align:center; }
+    .eyebrow { color:var(--cyan); font-weight:800; font-size:.8rem; letter-spacing:.15em; text-transform:uppercase; }
+    h1 { max-width:760px; margin:20px auto; font-size:clamp(2.6rem,7vw,5.5rem); line-height:1; letter-spacing:-.06em; }
+    .lead { max-width:630px; margin:0 auto 34px; color:var(--muted); font-size:1.18rem; line-height:1.65; }
+    .actions { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+    .button { display:inline-block; border-radius:10px; padding:13px 19px; background:var(--purple); color:white; font-weight:800; text-decoration:none; }
+    .button.secondary { background:transparent; border:1px solid #403d58; color:var(--text); }
+    .network-bar { display:flex; gap:10px; justify-content:center; margin-top:56px; flex-wrap:wrap; }
+    .network { padding:11px 15px; min-width:120px; border:1px solid #302d46; border-radius:9px; background:#10101d; color:var(--muted); font-size:.85rem; font-weight:800; }
+    .dot { display:inline-block; width:8px; height:8px; margin-right:7px; border-radius:50%; background:var(--purple); box-shadow:0 0 10px var(--purple); }
+    section { padding:70px 0; border-top:1px solid #242139; }
+    h2 { margin:0 0 14px; font-size:2rem; letter-spacing:-.04em; }
+    .section-lead { max-width:600px; color:var(--muted); line-height:1.65; }
+    .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:32px; }
+    .card { padding:25px; border:1px solid #302d46; border-radius:14px; background:linear-gradient(145deg,#171626,#0f0f1b); }
+    .card h3 { margin:0 0 9px; }
+    .card p { margin:0; color:var(--muted); line-height:1.58; }
+    pre { overflow:auto; margin-top:26px; padding:19px; border-radius:12px; background:#05050a; border:1px solid #2a2740; color:#d8b4fe; }
+    footer { padding:35px 0 50px; color:#7e7a95; font-size:.9rem; }
+    @media (max-width:700px) { .hero { padding:60px 0 75px; } .cards { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="/">Dark<b>Browser</b></a>
+      <a class="link" href="https://github.com/Palmtree890/darkbrowser">View on GitHub ↗</a>
+    </nav>
+    <main>
+      <div class="hero">
+        <div class="eyebrow">Linux desktop browser</div>
+        <h1>Private browsing, on your terms.</h1>
+        <p class="lead">DarkBrowser brings Tor, I2P, and direct browsing into one focused desktop interface. Select a network, open a tab, and stay in control of how you connect.</p>
+        <div class="actions">
+          <a class="button" href="https://github.com/Palmtree890/darkbrowser/releases">Download releases ↗</a>
+          <a class="button secondary" href="https://github.com/Palmtree890/darkbrowser#quick-start">Get started</a>
+        </div>
+        <div class="network-bar" aria-label="Supported networks">
+          <div class="network"><span class="dot"></span>TOR</div>
+          <div class="network"><span class="dot"></span>I2P</div>
+          <div class="network"><span class="dot"></span>CLEAR</div>
+        </div>
+      </div>
+      <section>
+        <h2>One browser, three routes.</h2>
+        <p class="section-lead">Switch routes from the toolbar. DarkBrowser manages local Tor and I2P services, gives each its status, and recognizes `.onion` and `.i2p` addresses.</p>
+        <div class="cards">
+          <article class="card"><h3>Tor</h3><p>Route traffic through a local SOCKS proxy and browse supported `.onion` sites.</p></article>
+          <article class="card"><h3>I2P</h3><p>Use a local I2P HTTP proxy to visit services on the I2P network.</p></article>
+          <article class="card"><h3>Clear</h3><p>Use a normal direct connection when privacy routing is not required.</p></article>
+        </div>
+      </section>
+      <section>
+        <h2>Build it yourself.</h2>
+        <p class="section-lead">DarkBrowser packages as both an AppImage and a Debian package on Linux x86_64.</p>
+        <pre><code>npm ci
+npm run setup
+npm run build</code></pre>
+      </section>
+    </main>
+    <footer>DarkBrowser is experimental software and is not a replacement for hardened anonymity tools such as Tor Browser.</footer>
+  </div>
+</body>
+</html>

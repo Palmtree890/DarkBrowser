@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DarkBrowser</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #08080f;
+      overflow: hidden;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      user-select: none;
+    }
+
+    /* Subtle radial bg glow */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 50% 50%, rgba(60,80,200,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .icon-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    /* Outer ring pulse */
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(100, 140, 255, 0.15);
+      animation: ring-pulse 3s ease-in-out infinite;
+    }
+    .ring-1 { width: 220px; height: 220px; animation-delay: 0s; }
+    .ring-2 { width: 270px; height: 270px; animation-delay: 0.6s; }
+    .ring-3 { width: 320px; height: 320px; animation-delay: 1.2s; }
+
+    @keyframes ring-pulse {
+      0%, 100% { opacity: 0.15; transform: scale(1); }
+      50%       { opacity: 0.35; transform: scale(1.02); }
+    }
+
+    .icon {
+      width: 180px;
+      height: 180px;
+      border-radius: 36px;
+      object-fit: contain;
+      position: relative;
+      z-index: 1;
+      animation: icon-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes icon-glow {
+      0%, 100% {
+        filter: drop-shadow(0 0 16px rgba(80,120,255,0.5))
+                drop-shadow(0 0 32px rgba(60,200,180,0.2));
+      }
+      50% {
+        filter: drop-shadow(0 0 32px rgba(80,120,255,0.8))
+                drop-shadow(0 0 60px rgba(60,200,180,0.4));
+      }
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #334155;
+      margin-bottom: 40px;
+    }
+
+    /* Loading bar */
+    .bar-track {
+      width: 200px;
+      height: 2px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b4fce, #6366f1, #38bdf8);
+      border-radius: 2px;
+      animation: load-bar 2.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes load-bar {
+      0%   { width: 0%;   opacity: 1; }
+      70%  { width: 85%;  opacity: 1; }
+      90%  { width: 95%;  opacity: 1; }
+      100% { width: 100%; opacity: 1; }
+    }
+
+    .status {
+      font-size: 11px;
+      color: #334155;
+      letter-spacing: 1px;
+      height: 16px;
+      transition: opacity 0.3s;
+    }
+
+    /* Fade out animation triggered by JS */
+    body.fade-out {
+      animation: fade-out 0.35s ease forwards;
+    }
+
+    @keyframes fade-out {
+      to { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="icon-wrap">
+    <div class="ring ring-1"></div>
+    <div class="ring ring-2"></div>
+    <div class="ring ring-3"></div>
+    <img class="icon" src="images/icon.png" alt="DarkBrowser">
+  </div>
+
+  <div class="title">DarkBrowser</div>
+  <div class="subtitle">Tor + I2P Unified</div>
+
+  <div class="bar-track">
+    <div class="bar-fill"></div>
+  </div>
+
+  <div class="status" id="status">Initialising...</div>
+
+  <script>
+    const statuses = [
+      [400,  'Loading interface...'],
+      [900,  'Starting network daemons...'],
+      [1600, 'Connecting to Tor...'],
+      [2200, 'Ready'],
+    ];
+    statuses.forEach(([delay, text]) => {
+      setTimeout(() => {
+        document.getElementById('status').textContent = text;
+      }, delay);
+    });
+  </script>
+</body>
+</html>

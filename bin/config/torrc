@@ -1,0 +1,9 @@
+# DarkBrowser — Tor config (paths substituted at runtime)
+SocksPort 9050
+ControlPort 9051
+CookieAuthentication 1
+DataDirectory {DATA_DIR}
+GeoIPFile {GEOIP}
+GeoIPv6File {GEOIP6}
+Log notice stdout
+MaxCircuitDirtiness 600

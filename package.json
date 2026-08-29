@@ -1,0 +1,47 @@
+{
+  "name": "darkbrowser",
+  "version": "1.0.0",
+  "description": "Privacy browser with Tor and I2P network support",
+  "author": "Palmtree890",
+  "homepage": "https://darkbrowser.palmtree.technology/",
+  "main": "main.js",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "start": "electron .",
+    "build": "electron-builder --linux",
+    "build:deb": "electron-builder --linux deb",
+    "build:appimage": "electron-builder --linux AppImage"
+  },
+  "keywords": [
+    "tor",
+    "i2p",
+    "privacy",
+    "browser"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.darkbrowser.app",
+    "productName": "DarkBrowser",
+    "icon": "src/images/icon-512.png",
+    "directories": {
+      "output": "dist"
+    },
+    "asarUnpack": [
+      "bin/**"
+    ],
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Network",
+      "icon": "src/images/icon-512.png",
+      "maintainer": "Palmtree890",
+      "synopsis": "Privacy browser with Tor and I2P network support"
+    }
+  },
+  "dependencies": {
+    "playwright-core": "^1.61.0"
+  }
+}

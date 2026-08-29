@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>New Tab — DarkBrowser</title>
+  <style>
+    :root {
+      --tor:   #a855f7;
+      --i2p:   #10b981;
+      --clear: #60a5fa;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #08080f;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      padding: 40px 20px;
+    }
+
+    /* Logo */
+    .logo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-img {
+      width: 200px;
+      height: 200px;
+      object-fit: contain;
+      border-radius: 32px;
+      animation: glow 3s ease-in-out infinite;
+    }
+
+    @keyframes glow {
+      0%, 100% { filter: drop-shadow(0 0 12px rgba(99,120,255,0.4)) drop-shadow(0 0 28px rgba(80,200,180,0.2)); }
+      50%       { filter: drop-shadow(0 0 24px rgba(99,120,255,0.7)) drop-shadow(0 0 48px rgba(80,200,180,0.35)); }
+    }
+
+    .tagline {
+      font-size: 12px;
+      color: #475569;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    /* Search */
+    .search-wrap {
+      width: 100%;
+      max-width: 560px;
+      position: relative;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      padding: 14px 20px 14px 48px;
+      background: #0d0d1a;
+      border: 1px solid #2a2a45;
+      border-radius: 12px;
+      color: #e2e8f0;
+      font-size: 15px;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      caret-color: #a855f7;
+    }
+
+    .search-wrap input:focus {
+      border-color: #a855f7;
+      box-shadow: 0 0 0 3px rgba(168,85,247,0.15), 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    .search-wrap input::placeholder { color: #334155; }
+
+    .search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #475569;
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    /* Network status */
+    .network-grid {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .net-card {
+      flex: 1;
+      background: #0d0d1a;
+      border: 1px solid #1a1a2e;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.2s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .net-card:hover { border-color: #2a2a45; }
+
+    .net-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .net-card-name {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .net-card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #1e293b;
+    }
+
+    .net-card-dot.online { background: currentColor; box-shadow: 0 0 6px currentColor; }
+    .net-card-dot.offline { background: #ef4444; }
+
+    .net-card-desc {
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .net-card-status {
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .net-card[data-net="tor"]    { --net-c: #a855f7; }
+    .net-card[data-net="i2p"]    { --net-c: #10b981; }
+    .net-card[data-net="direct"] { --net-c: #60a5fa; }
+
+    .net-card .net-card-name  { color: var(--net-c); }
+    .net-card .net-card-dot   { color: var(--net-c); }
+    .net-card .net-card-status { color: var(--net-c); }
+
+    /* Quick links */
+    .links-section {
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .links-title {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #334155;
+      margin-bottom: 12px;
+    }
+
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .quick-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #0d0d1a;
+      border: 1px solid #1a1a2e;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #94a3b8;
+      font-size: 12px;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      cursor: pointer;
+    }
+
+    .quick-link:hover {
+      background: #12121f;
+      border-color: #2a2a45;
+      color: #e2e8f0;
+    }
+
+    .quick-link-badge {
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-tor  { background: rgba(168,85,247,0.2); color: #a855f7; }
+    .badge-i2p  { background: rgba(16,185,129,0.2); color: #10b981; }
+    .badge-web  { background: rgba(96,165,250,0.2); color: #60a5fa; }
+
+    footer {
+      font-size: 11px;
+      color: #1e293b;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="logo-wrap">
+    <img class="logo-img" src="images/logo.png" alt="DarkBrowser">
+    <div class="tagline">TOR + I2P UNIFIED</div>
+  </div>
+
+  <div class="search-wrap">
+    <span class="search-icon">&#128269;</span>
+    <input id="search" type="text" placeholder="Search DuckDuckGo or enter an address..." autofocus>
+  </div>
+
+  <div class="network-grid">
+    <div class="net-card" data-net="tor">
+      <div class="net-card-header">
+        <span class="net-card-name">&#9865; Tor</span>
+        <span class="net-card-dot" id="card-dot-tor"></span>
+      </div>
+      <div class="net-card-desc">Onion routing — anonymizes traffic through volunteer relays. Use for .onion sites.</div>
+      <div class="net-card-status" id="card-status-tor">Checking...</div>
+    </div>
+
+    <div class="net-card" data-net="i2p">
+      <div class="net-card-header">
+        <span class="net-card-name">&#9672; I2P</span>
+        <span class="net-card-dot" id="card-dot-i2p"></span>
+      </div>
+      <div class="net-card-desc">Invisible Internet Project — internal network for .i2p eepsites and services.</div>
+      <div class="net-card-status" id="card-status-i2p">Checking...</div>
+    </div>
+
+    <div class="net-card" data-net="direct">
+      <div class="net-card-header">
+        <span class="net-card-name">&#127760; Clearnet</span>
+        <span class="net-card-dot online" id="card-dot-direct"></span>
+      </div>
+      <div class="net-card-desc">Direct connection without proxy. No anonymity — use for speed or trusted sites.</div>
+      <div class="net-card-status" id="card-status-direct" style="color:#60a5fa">Always available</div>
+    </div>
+  </div>
+
+  <div class="links-section">
+    <div class="links-title">Quick Access</div>
+    <div class="links-grid">
+      <a class="quick-link" href="https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion">
+        <span class="quick-link-badge badge-tor">TOR</span>
+        DuckDuckGo
+      </a>
+      <a class="quick-link" href="http://juhanurmihxlp77nkq76byazcldy2hlmovfu2epvl5ankdibsot4csyd.onion">
+        <span class="quick-link-badge badge-tor">TOR</span>
+        Ahmia Search
+      </a>
+      <a class="quick-link" href="http://127.0.0.1:7657">
+        <span class="quick-link-badge badge-i2p">I2P</span>
+        I2P Router Console
+      </a>
+      <a class="quick-link" href="http://stats.i2p">
+        <span class="quick-link-badge badge-i2p">I2P</span>
+        I2P Stats
+      </a>
+      <a class="quick-link" href="https://duckduckgo.com">
+        <span class="quick-link-badge badge-web">WEB</span>
+        DuckDuckGo
+      </a>
+      <a class="quick-link" href="https://www.torproject.org">
+        <span class="quick-link-badge badge-web">WEB</span>
+        Tor Project
+      </a>
+    </div>
+  </div>
+
+  <footer>No history &bull; No telemetry &bull; No tracking</footer>
+
+  <script>
+    // Search
+    document.getElementById('search').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const val = e.target.value.trim();
+        if (!val) return;
+        let url;
+        if (/^https?:\/\//i.test(val)) {
+          url = val;
+        } else if (/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(val) && !val.includes(' ')) {
+          url = 'https://' + val;
+        } else {
+          url = 'https://duckduckgo.com/?q=' + encodeURIComponent(val);
+        }
+        location.href = url;
+      }
+    });
+
+    // Quick links use default navigation
+    document.querySelectorAll('.quick-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        location.href = link.href;
+      });
+    });
+
+    // Check network status via fetch to the proxy ports
+    async function checkPort(url) {
+      try {
+        const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(2000) });
+        return res.ok || res.status > 0;
+      } catch {
+        return false;
+      }
+    }
+
+    async function updateStatus() {
+      // Try to reach Tor socks port indicator
+      const torEl = document.getElementById('card-dot-tor');
+      const torSt = document.getElementById('card-status-tor');
+      const i2pEl = document.getElementById('card-dot-i2p');
+      const i2pSt = document.getElementById('card-status-i2p');
+
+      // We can't do raw TCP from renderer, but we can try HTTP requests
+      // Tor SOCKS port doesn't serve HTTP, but I2P HTTP proxy at 4444 does
+      const i2pOk = await checkPort('http://127.0.0.1:4444/').catch(() => false);
+      if (i2pOk) {
+        i2pEl.classList.add('online');
+        i2pSt.textContent = '● Connected — port 4444';
+      } else {
+        i2pEl.classList.add('offline');
+        i2pSt.textContent = '○ Not detected — start I2P';
+        i2pSt.style.color = '#ef4444';
+      }
+
+      // For Tor, check the control port or use a known check
+      const torCheck = await fetch('http://127.0.0.1:9050', { signal: AbortSignal.timeout(1500) })
+        .then(() => true)
+        .catch((e) => e.message.includes('net::ERR_CONNECTION_REFUSED') ? false : true);
+
+      if (torCheck) {
+        torEl.classList.add('online');
+        torSt.textContent = '● Connected — port 9050';
+      } else {
+        torEl.classList.add('offline');
+        torSt.textContent = '○ Not detected — start Tor';
+        torSt.style.color = '#ef4444';
+      }
+    }
+
+    updateStatus();
+  </script>
+</body>
+</html>

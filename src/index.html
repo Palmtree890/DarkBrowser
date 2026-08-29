@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>DarkBrowser</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Title bar / drag region -->
+  <div id="titlebar">
+    <div id="titlebar-drag">
+      <img id="app-logo" src="images/icon.png" alt="DarkBrowser">
+      <span id="app-name">DarkBrowser</span>
+    </div>
+    <div id="window-controls">
+      <button id="btn-minimize" title="Minimize">&#8722;</button>
+      <button id="btn-maximize" title="Maximize">&#9633;</button>
+      <button id="btn-close" title="Close">&#10005;</button>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div id="tabbar">
+    <div id="tabs-container"></div>
+    <button id="btn-new-tab" title="New Tab">&#43;</button>
+  </div>
+
+  <!-- Navigation bar -->
+  <div id="navbar">
+    <div id="nav-left">
+      <button id="btn-back" class="nav-btn" title="Go Back" disabled>&#8592;</button>
+      <button id="btn-forward" class="nav-btn" title="Go Forward" disabled>&#8594;</button>
+      <button id="btn-reload" class="nav-btn" title="Reload">&#8635;</button>
+    </div>
+
+    <div id="address-bar-wrap">
+      <span id="security-icon">&#128274;</span>
+      <input id="address-bar" type="text" placeholder="Search or enter address..." autocomplete="off" spellcheck="false">
+      <span id="load-indicator" class="hidden"></span>
+    </div>
+
+    <div id="network-switcher">
+      <button class="net-btn" id="net-tor" data-network="tor" title="Route through Tor (right-click to restart)">
+        <div class="net-btn-row">
+          <span class="net-icon">&#9865;</span>
+          <span class="net-label">TOR</span>
+          <span class="net-dot" id="dot-tor"></span>
+        </div>
+        <span class="net-sub" id="sub-tor">Stopped</span>
+      </button>
+      <button class="net-btn" id="net-i2p" data-network="i2p" title="Route through I2P (right-click to restart)">
+        <div class="net-btn-row">
+          <span class="net-icon">&#9672;</span>
+          <span class="net-label">I2P</span>
+          <span class="net-dot" id="dot-i2p"></span>
+        </div>
+        <span class="net-sub" id="sub-i2p">Stopped</span>
+      </button>
+      <button class="net-btn" id="net-direct" data-network="direct" title="Direct connection (no proxy)">
+        <div class="net-btn-row">
+          <span class="net-icon">&#127760;</span>
+          <span class="net-label">CLEAR</span>
+          <span class="net-dot" id="dot-direct" style="background:#60a5fa;box-shadow:0 0 6px #60a5fa"></span>
+        </div>
+        <span class="net-sub">Always on</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
