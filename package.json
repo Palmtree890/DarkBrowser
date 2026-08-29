@@ -10,7 +10,8 @@
     "start": "electron .",
     "build": "electron-builder --linux",
     "build:deb": "electron-builder --linux deb",
-    "build:appimage": "electron-builder --linux AppImage"
+    "build:appimage": "electron-builder --linux AppImage",
+    "build:rpm": "electron-builder --linux rpm"
   },
   "keywords": [
     "tor",
@@ -34,7 +35,7 @@
       "bin/**"
     ],
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": ["AppImage", "deb", "rpm"],
       "category": "Network",
       "icon": "src/images/icon-512.png",
       "maintainer": "Palmtree890",

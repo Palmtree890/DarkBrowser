@@ -22,7 +22,30 @@ DarkBrowser is a Linux desktop browser built with Electron. It can route its bro
 
 The setup script first looks for installed `tor`, `i2pd`, or `i2prouter` binaries. When they are not available, it downloads compatible Linux binaries. Internet access is therefore needed if the bundled binaries are missing or unusable.
 
-## Quick start
+## Download a release
+
+Prebuilt Linux packages are published on the [GitHub Releases page](https://github.com/Palmtree890/DarkBrowser/releases).
+
+- **AppImage:** download the `.AppImage` file, make it executable, then run it:
+
+  ```bash
+  chmod +x DarkBrowser-*.AppImage
+  ./DarkBrowser-*.AppImage
+  ```
+
+- **Debian/Ubuntu:** download the `.deb` file and install it with:
+
+  ```bash
+  sudo apt install ./darkbrowser_*.deb
+  ```
+
+- **Fedora, RHEL, and similar distributions:** download the `.rpm` file and install it with:
+
+  ```bash
+  sudo dnf install ./darkbrowser-*.rpm
+  ```
+
+## Compile from source
 
 From the project directory:
 
@@ -54,19 +77,20 @@ DarkBrowser starts with **Tor** selected. Wait until the Tor indicator shows it 
 | `npm ci` | Install the exact dependency versions in `package-lock.json`. |
 | `npm run setup` | Locate or download Tor/I2P binaries and ensure configuration files exist. |
 | `npm start` | Run DarkBrowser in development. |
-| `npm run build` | Create both Linux AppImage and Debian (`.deb`) packages. |
+| `npm run build` | Create AppImage, Debian (`.deb`), and RPM packages. |
 | `npm run build:appimage` | Create only an AppImage package. |
 | `npm run build:deb` | Create only a Debian package. |
+| `npm run build:rpm` | Create only an RPM package. |
 
 ## Build Linux packages
 
-After completing the quick-start setup, build both distributable formats with:
+After completing the source setup, build all distributable formats with:
 
 ```bash
 npm run build
 ```
 
-The generated `.AppImage` and `.deb` files are written to `dist/`. To create one format only, use `npm run build:appimage` or `npm run build:deb`.
+The generated `.AppImage`, `.deb`, and `.rpm` files are written to `dist/`. To create one format only, use `npm run build:appimage`, `npm run build:deb`, or `npm run build:rpm`.
 
 The package build keeps `bin/` outside Electron's application archive so the bundled Tor and I2P executables can run in the installed app. Build on Linux x86_64 for Linux x86_64 packages.
 
