@@ -133,28 +133,45 @@ npm run build</code></pre>
         if (/(ubuntu|debian|mint|pop!_os|elementary|zorin)/.test(userAgent)) return 'deb';
         if (/(fedora|rhel|red hat|centos|rocky|alma|suse|opensuse)/.test(userAgent)) return 'rpm';
         if (/(arch|manjaro|endeavouros|garuda)/.test(userAgent)) return 'appimage';
-        return 'appimage';
+        return null;
       }
 
       function assetFor(family) {
+        if (!family) return null;
         const extension = family === 'deb' ? /\.deb$/i : family === 'rpm' ? /\.rpm$/i : /\.appimage$/i;
         return assets.find(asset => extension.test(asset.name));
       }
 
       function updateButtons() {
-        const family = select.value === 'auto' ? detectFamily() : select.value;
-        const asset = assetFor(family);
+        const isAuto = select.value === 'auto';
+        const detectedFamily = isAuto ? detectFamily() : select.value;
         const portableAsset = assetFor('appimage');
-        const detected = select.value === 'auto';
+        portableButton.href = portableAsset ? portableAsset.browser_download_url : releasesPage;
+
+        if (isAuto && !detectedFamily) {
+          button.textContent = 'Distro not detected';
+          button.href = '#linux-family';
+          status.innerHTML = '<strong>Linux distribution not detected.</strong><br>Please select your Linux distribution below to choose an installer.';
+          return;
+        }
+
+        const family = detectedFamily || select.value;
+        const asset = assetFor(family);
         const label = family === 'deb' ? 'Download for Debian / Ubuntu' : family === 'rpm' ? 'Download for Fedora / RPM' : 'Download AppImage';
 
         button.textContent = asset ? label : 'View releases ↗';
         button.href = asset ? asset.browser_download_url : releasesPage;
-        portableButton.href = portableAsset ? portableAsset.browser_download_url : releasesPage;
-        status.innerHTML = detected
-          ? `<strong>${distroNames[family]} selected.</strong><br>Your browser only shares limited Linux details, so you can change the installer if this is not right.`
+        status.innerHTML = isAuto
+          ? `<strong>${distroNames[family]} detected.</strong><br>Your browser only shares limited Linux details, so you can change the installer if this is not right.`
           : `<strong>${distroNames[family]} selected.</strong><br>The primary button will download the matching release package.`;
       }
+
+      button.addEventListener('click', (e) => {
+        if (select.value === 'auto' && !detectFamily()) {
+          e.preventDefault();
+          select.focus();
+        }
+      });
 
       select.addEventListener('change', updateButtons);
       fetch(releaseApi, { headers: { Accept: 'application/vnd.github+json' } })
