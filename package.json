@@ -1,17 +1,19 @@
 {
   "name": "darkbrowser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Privacy browser with Tor and I2P network support",
   "author": "Palmtree890",
   "homepage": "https://darkbrowser.palmtree.technology/",
   "main": "main.js",
   "scripts": {
     "setup": "node scripts/setup.mjs",
+    "setup:win": "node scripts/setup.mjs --win32",
     "start": "electron .",
     "build": "electron-builder --linux",
     "build:deb": "electron-builder --linux deb",
     "build:appimage": "electron-builder --linux AppImage",
-    "build:rpm": "electron-builder --linux rpm"
+    "build:rpm": "electron-builder --linux rpm",
+    "build:win": "electron-builder --win"
   },
   "keywords": [
     "tor",
@@ -40,6 +42,16 @@
       "icon": "src/images/icon-512.png",
       "maintainer": "Palmtree890",
       "synopsis": "Privacy browser with Tor and I2P network support"
+    },
+    "win": {
+      "target": ["nsis", "zip"],
+      "icon": "src/images/icon-512.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "DarkBrowser-Setup-${version}.${ext}"
     }
   },
   "dependencies": {

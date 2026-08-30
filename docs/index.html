@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="DarkBrowser is a Linux desktop browser with Tor and I2P network support.">
+  <meta name="description" content="DarkBrowser is a desktop browser with Tor and I2P network support.">
   <title>DarkBrowser — Private routes. Local control.</title>
   <style>
     :root { color-scheme:dark; --bg:#030303; --panel:#090909; --panel-2:#111111; --line:#2a2a2a; --text:#f4f4f4; --muted:#a5a5a5; --green:#d8d8d8; --dim:#545454; --amber:#b5b5b5; }
@@ -65,7 +65,7 @@
     <main class="terminal">
       <div class="terminal-head"><span class="lights"><i></i><i></i><i></i></span> darkbrowser — secure shell</div>
       <div class="hero">
-        <div class="eyebrow">Linux desktop browser</div>
+        <div class="eyebrow">Linux &amp; Windows desktop browser</div>
         <h1>Private routes.<br><span>Local control.</span></h1>
         <p class="lead">DarkBrowser brings Tor, I2P, and direct browsing into one focused desktop interface. Select a network, open a tab, and stay in control of how you connect.</p>
         <div class="actions">
@@ -74,11 +74,12 @@
           <a class="button secondary" href="https://github.com/Palmtree890/darkbrowser#quick-start">Get started</a>
         </div>
         <div class="download-panel" aria-live="polite">
-          <p id="download-status"><strong>Checking your Linux distribution…</strong><br>We’ll choose the best installer available for your system.</p>
+          <p id="download-status"><strong>Checking your system…</strong><br>We’ll choose the best installer available for your OS.</p>
           <label class="download-choice" for="linux-family">
             <span>Installer:</span>
             <select id="linux-family" name="linux-family">
               <option value="auto">Detect automatically</option>
+              <option value="windows">Windows (.exe installer)</option>
               <option value="deb">Debian / Ubuntu / Mint (.deb)</option>
               <option value="rpm">Fedora / RHEL / openSUSE (.rpm)</option>
               <option value="appimage">Arch or portable (.AppImage)</option>
@@ -104,7 +105,7 @@
       <section>
         <div class="section-label">// BUILD FROM SOURCE</div>
         <h2>Build it yourself.</h2>
-        <p class="section-lead">DarkBrowser packages as AppImage, Debian, and RPM formats on Linux x86_64. Arch users can use the portable AppImage.</p>
+        <p class="section-lead">DarkBrowser packages as AppImage, Debian, and RPM formats on Linux x86_64, and as an installer for Windows x86_64. Arch users can use the portable AppImage.</p>
         <pre><code>npm ci
 npm run setup
 npm run build</code></pre>
@@ -123,6 +124,7 @@ npm run build</code></pre>
       let assets = [];
 
       const distroNames = {
+        windows: 'Windows',
         deb: 'Debian-family Linux',
         rpm: 'Fedora/RPM-family Linux',
         appimage: 'portable Linux'
@@ -130,6 +132,7 @@ npm run build</code></pre>
 
       function detectFamily() {
         const userAgent = navigator.userAgent.toLowerCase();
+        if (/(windows|win32|win64)/.test(userAgent)) return 'windows';
         if (/(ubuntu|debian|mint|pop!_os|elementary|zorin)/.test(userAgent)) return 'deb';
         if (/(fedora|rhel|red hat|centos|rocky|alma|suse|opensuse)/.test(userAgent)) return 'rpm';
         if (/(arch|manjaro|endeavouros|garuda)/.test(userAgent)) return 'appimage';
@@ -138,6 +141,7 @@ npm run build</code></pre>
 
       function assetFor(family) {
         if (!family) return null;
+        if (family === 'windows') return assets.find(asset => /\.exe$/i.test(asset.name)) || null;
         const extension = family === 'deb' ? /\.deb$/i : family === 'rpm' ? /\.rpm$/i : /\.appimage$/i;
         return assets.find(asset => extension.test(asset.name));
       }
@@ -145,24 +149,28 @@ npm run build</code></pre>
       function updateButtons() {
         const isAuto = select.value === 'auto';
         const detectedFamily = isAuto ? detectFamily() : select.value;
-        const portableAsset = assetFor('appimage');
+        const portableAsset = isAuto
+          ? (detectedFamily === 'windows' ? assets.find(asset => /\.zip$/i.test(asset.name)) : assetFor('appimage'))
+          : (select.value === 'windows' ? assets.find(asset => /\.zip$/i.test(asset.name)) : assetFor('appimage'));
         portableButton.href = portableAsset ? portableAsset.browser_download_url : releasesPage;
 
         if (isAuto && !detectedFamily) {
-          button.textContent = 'Distro not detected';
+          button.textContent = 'OS not detected';
           button.href = '#linux-family';
-          status.innerHTML = '<strong>Linux distribution not detected.</strong><br>Please select your Linux distribution below to choose an installer.';
+          status.innerHTML = '<strong>Operating system not detected.</strong><br>Please select your installer below.';
           return;
         }
 
         const family = detectedFamily || select.value;
         const asset = assetFor(family);
-        const label = family === 'deb' ? 'Download for Debian / Ubuntu' : family === 'rpm' ? 'Download for Fedora / RPM' : 'Download AppImage';
+        const label = family === 'windows'
+          ? 'Download for Windows'
+          : family === 'deb' ? 'Download for Debian / Ubuntu' : family === 'rpm' ? 'Download for Fedora / RPM' : 'Download AppImage';
 
         button.textContent = asset ? label : 'View releases ↗';
         button.href = asset ? asset.browser_download_url : releasesPage;
         status.innerHTML = isAuto
-          ? `<strong>${distroNames[family]} detected.</strong><br>Your browser only shares limited Linux details, so you can change the installer if this is not right.`
+          ? `<strong>${distroNames[family]} detected.</strong><br>Your browser only shares limited system details, so you can change the installer if this is not right.`
           : `<strong>${distroNames[family]} selected.</strong><br>The primary button will download the matching release package.`;
       }
 

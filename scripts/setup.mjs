@@ -16,9 +16,17 @@ import https from 'node:https';
 import { tmpdir } from 'node:os';
 
 const ROOT   = resolve(fileURLToPath(import.meta.url), '../..');
-const LBIN   = join(ROOT, 'bin', 'linux');
+const HOST   = process.platform;                       // 'linux' | 'win32' | ...
+// Target platform: --win32 forces Windows binaries even on a Linux host
+// (used to cross-prepare bin/win32 for packaging).
+const PLAT   = (process.argv.includes('--win32') || HOST === 'win32') ? 'win32' : 'linux';
+const LBIN   = join(ROOT, 'bin', PLAT);
 const GEOIP  = join(ROOT, 'bin', 'geoip');
 const CFGDIR = join(ROOT, 'bin', 'config');
+
+const crossPlatform = PLAT !== (HOST === 'win32' ? 'win32' : 'linux');
+const pname  = name => PLAT === 'win32' ? (name.endsWith('.exe') ? name : `${name}.exe`) : name;
+const DEFAULT_TOR_VERSION = '15.0.20';
 
 const g    = s => `\x1b[32m${s}\x1b[0m`;
 const y    = s => `\x1b[33m${s}\x1b[0m`;
@@ -36,8 +44,19 @@ function mkdirs(...paths) {
   for (const p of paths) mkdirSync(p, { recursive: true });
 }
 
-// Search common system paths for a binary
+// Test a binary actually runs (not missing shared libs).
+// Foreign-platform binaries cannot run on this host, so skip the probe.
+function binaryWorks(path) {
+  if (crossPlatform) return true;
+  try {
+    execSync(`"${path}" --version 2>&1`, { stdio: 'pipe', timeout: 3000 });
+    return true;
+  } catch { return false; }
+}
+
+// Search common system paths for a binary (host platform only).
 function findSystemBinary(...names) {
+  if (crossPlatform) return null;
   const dirs = [
     '/usr/sbin', '/usr/bin', '/usr/local/sbin', '/usr/local/bin',
     '/opt/homebrew/bin', `${process.env.HOME}/.local/bin`,
@@ -53,14 +72,6 @@ function findSystemBinary(...names) {
     } catch { /* not found */ }
   }
   return null;
-}
-
-// Test a binary actually runs (not missing shared libs)
-function binaryWorks(path) {
-  try {
-    execSync(`"${path}" --version 2>&1`, { stdio: 'pipe', timeout: 3000 });
-    return true;
-  } catch { return false; }
 }
 
 function fetchJson(url) {
@@ -112,9 +123,9 @@ function download(url, dest) {
 async function setupTor() {
   step('Tor');
 
-  const dest = join(LBIN, 'tor');
+  const dest = join(LBIN, pname('tor'));
   if (existsSync(dest) && binaryWorks(dest)) {
-    ok('bin/linux/tor already present and working');
+    ok(`bin/${PLAT}/${pname('tor')} already present and working`);
     ensureGeoip();
     return;
   }
@@ -124,7 +135,7 @@ async function setupTor() {
     info(`Found system Tor at ${sys}`);
     copyFileSync(sys, dest);
     chmodSync(dest, 0o755);
-    ok('Copied to bin/linux/tor');
+    ok(`Copied to bin/${PLAT}/${pname('tor')}`);
     ensureGeoip();
     return;
   }
@@ -152,11 +163,12 @@ async function downloadTorBundle() {
   try {
     const v = await fetchJson('https://aus1.torproject.org/torbrowser/update_3/release/RecommendedTBBVersions');
     version = Array.isArray(v) ? v[0] : v;
-  } catch { version = '14.5.4'; warn(`Could not fetch version, using ${version}`); }
+  } catch { version = DEFAULT_TOR_VERSION; warn(`Could not fetch version, using ${version}`); }
 
-  const url = `https://dist.torproject.org/torbrowser/${version}/tor-expert-bundle-linux-x86_64-${version}.tar.gz`;
-  const tmp = join(tmpdir(), `tor-expert-${version}.tar.gz`);
-  const ext = join(tmpdir(), `tor-expert-${version}`);
+  const torPlat = PLAT === 'win32' ? 'windows-x86_64' : 'linux-x86_64';
+  const url = `https://dist.torproject.org/torbrowser/${version}/tor-expert-bundle-${torPlat}-${version}.tar.gz`;
+  const tmp = join(tmpdir(), `tor-expert-${torPlat}-${version}.tar.gz`);
+  const ext = join(tmpdir(), `tor-expert-${torPlat}-${version}`);
 
   info(`Downloading Tor Expert Bundle ${version}...`);
   await download(url, tmp);
@@ -164,14 +176,14 @@ async function downloadTorBundle() {
   mkdirSync(ext, { recursive: true });
   execSync(`tar -xzf ${JSON.stringify(tmp)} -C ${JSON.stringify(ext)}`, { stdio: 'pipe' });
 
-  const bin = join(ext, 'tor', 'tor');
+  const bin = join(ext, 'tor', pname('tor'));
   if (!existsSync(bin)) throw new Error('tor binary not found in bundle');
-  copyFileSync(bin, join(LBIN, 'tor'));
-  chmodSync(join(LBIN, 'tor'), 0o755);
-  ok('Tor binary installed');
+  copyFileSync(bin, join(LBIN, pname('tor')));
+  chmodSync(join(LBIN, pname('tor')), 0o755);
+  ok(`Tor binary installed (bin/${PLAT}/${pname('tor')})`);
 
   for (const name of ['geoip', 'geoip6']) {
-    const src = join(ext, 'tor', name);
+    const src = join(ext, 'data', name);
     if (existsSync(src)) copyFileSync(src, join(GEOIP, name));
   }
   ok('GeoIP files installed from bundle');
@@ -185,8 +197,8 @@ async function downloadTorBundle() {
   for (const ptDir of ptDirs) {
     if (!existsSync(ptDir)) continue;
     for (const name of ['lyrebird', 'obfs4proxy', 'snowflake-client', 'webtunnel-client', 'conjure-client']) {
-      const src = join(ptDir, name);
-      const dest = join(LBIN, name);
+      const src = join(ptDir, pname(name));
+      const dest = join(LBIN, pname(name));
       if (existsSync(src) && !existsSync(dest)) {
         copyFileSync(src, dest);
         chmodSync(dest, 0o755);
@@ -205,9 +217,9 @@ function setupPluggableTransports() {
   let foundAny = false;
 
   for (const name of ptNames) {
-    const dest = join(LBIN, name);
+    const dest = join(LBIN, pname(name));
     if (existsSync(dest) && binaryWorks(dest)) {
-      ok(`bin/linux/${name} already present and working`);
+      ok(`bin/${PLAT}/${pname(name)} already present and working`);
       foundAny = true;
       continue;
     }
@@ -218,7 +230,7 @@ function setupPluggableTransports() {
       copyFileSync(sys, dest);
       chmodSync(dest, 0o755);
       if (binaryWorks(dest)) {
-        ok(`Copied to bin/linux/${name}`);
+        ok(`Copied to bin/${PLAT}/${pname(name)}`);
         foundAny = true;
       } else {
         warn(`Copied ${name} but it failed to run (missing dependencies)`);
@@ -226,7 +238,9 @@ function setupPluggableTransports() {
     }
   }
 
-  if (!foundAny) {
+  if (!foundAny && !crossPlatform) {
+    ok('Pluggable transport binaries present from Tor bundle');
+  } else if (!foundAny) {
     info('No pluggable transport binaries found on system (optional).');
     info('For obfs4 bridge support, install obfs4proxy: sudo apt install obfs4proxy');
   }
@@ -236,6 +250,17 @@ function setupPluggableTransports() {
 
 async function setupI2p() {
   step('I2P');
+
+  // Windows: rely on the official win64 zip build of i2pd.
+  if (PLAT === 'win32') {
+    const dest = join(LBIN, pname('i2pd'));
+    if (existsSync(dest)) {
+      ok(`bin/win32/${pname('i2pd')} already present`);
+      return;
+    }
+    await downloadI2pdWindows();
+    return;
+  }
 
   // Check for already-bundled binary
   for (const name of ['i2pd', 'i2prouter']) {
@@ -314,6 +339,50 @@ async function downloadI2pd() {
   }
 
   throw new Error('No compatible i2pd binary found. Install i2pd or i2p manually: sudo apt install i2pd');
+}
+
+function extractZip(zipPath, destDir) {
+  mkdirSync(destDir, { recursive: true });
+  for (const [cmd, args, shell] of [
+    ['unzip', ['-q', '-o', zipPath, '-d', destDir], false],
+    ['python3', ['-m', 'zipfile', '-e', zipPath, destDir], false],
+    ['powershell', ['-NoProfile', '-Command', `Expand-Archive -Force '${zipPath}' '${destDir}'`], true],
+  ]) {
+    try {
+      execSync(`"${cmd}" ${args.map(a => `"${a}"`).join(' ')}`, {
+        shell: shell || '/bin/sh',
+        stdio: 'pipe',
+        timeout: 120000,
+      });
+      return;
+    } catch { /* try next extractor */ }
+  }
+  throw new Error(`Could not extract ${zipPath} (needs unzip or python3)`);
+}
+
+async function downloadI2pdWindows() {
+  const release = await fetchJson('https://api.github.com/repos/PurpleI2P/i2pd/releases/latest');
+  const version = release.tag_name;
+  info(`Latest i2pd: ${version}`);
+
+  const asset = release.assets.find(a =>
+    a.name.includes('win64_mingw') && a.name.endsWith('.zip')
+  );
+  if (!asset) throw new Error('No win64 i2pd asset found in latest release');
+
+  const tmp = join(tmpdir(), asset.name);
+  const ext = join(tmpdir(), 'i2pd-extract-win');
+  info(`Downloading ${asset.name}...`);
+  await download(asset.browser_download_url, tmp);
+
+  extractZip(tmp, ext);
+  const bin = join(ext, 'i2pd.exe');
+  if (!existsSync(bin)) throw new Error('i2pd.exe not found in archive');
+
+  const dest = join(LBIN, pname('i2pd'));
+  copyFileSync(bin, dest);
+  chmodSync(dest, 0o755);
+  ok(`i2pd ${version} installed to bin/win32/i2pd.exe`);
 }
 
 // ── Config files ─────────────────────────────────────────────────────────────

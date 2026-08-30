@@ -8,6 +8,13 @@ const TOOLBAR_HEIGHT = 116;
 const TOR_SOCKS_PORT = 9050;
 const I2P_HTTP_PORT  = 4444;
 const appStartTime   = Date.now();
+const isWin          = process.platform === 'win32';
+
+// Append the platform-appropriate extension to a daemon binary name.
+const pname = name => isWin ? (name.endsWith('.exe') ? name : `${name}.exe`) : name;
+
+// Directory inside bin/ that holds binaries for the current platform.
+const binPlatDir = isWin ? 'win32' : 'linux';
 
 // Set app identity before any window is created
 app.setName('DarkBrowser');
@@ -106,10 +113,10 @@ function saveBridgeSettings(bridgeSettings) {
 
 function getAvailableTransports() {
   return {
-    obfs4: findBinary('lyrebird', 'obfs4proxy'),
-    snowflake: findBinary('snowflake-client'),
-    webtunnel: findBinary('webtunnel-client'),
-    meek: findBinary('lyrebird', 'obfs4proxy'),
+    obfs4: findBinary(pname('lyrebird'), pname('obfs4proxy')),
+    snowflake: findBinary(pname('snowflake-client')),
+    webtunnel: findBinary(pname('webtunnel-client')),
+    meek: findBinary(pname('lyrebird'), pname('obfs4proxy')),
   };
 }
 
@@ -138,7 +145,7 @@ const daemons = {
 
 function findBinary(...names) {
   const dirs = [
-    path.join(runtimeBinDir, 'linux'),
+    path.join(runtimeBinDir, binPlatDir),
     '/usr/sbin', '/usr/bin', '/usr/local/sbin', '/usr/local/bin',
     path.join(process.env.HOME || '', '.local', 'bin'),
   ];
@@ -147,8 +154,15 @@ function findBinary(...names) {
       const full = path.join(dir, name);
       if (fs.existsSync(full)) return full;
     }
-    try { const r = execSync(`which ${name} 2>/dev/null`, { encoding: 'utf8' }).trim(); if (r) return r; }
-    catch { /* not in PATH */ }
+    try {
+      if (isWin) {
+        const r = execSync(`where ${name}`, { encoding: 'utf8' }).trim();
+        if (r) return r.split(/\r?\n/)[0];
+      } else {
+        const r = execSync(`which ${name} 2>/dev/null`, { encoding: 'utf8' }).trim();
+        if (r) return r;
+      }
+    } catch { /* not in PATH */ }
   }
   return null;
 }
@@ -169,7 +183,7 @@ async function startTor() {
     return;
   }
 
-  const bin = findBinary('tor');
+  const bin = findBinary(pname('tor'));
   if (!bin) {
     emitDaemonStatus('tor', { status: 'missing' });
     return;
@@ -279,7 +293,7 @@ async function startI2pd() {
   }
 
   // Prefer i2pd (C++), fall back to i2prouter (Java I2P)
-  const bin = findBinary('i2pd', 'i2prouter');
+  const bin = findBinary(pname('i2pd'), pname('i2prouter'));
   if (!bin) {
     emitDaemonStatus('i2p', { status: 'missing' });
     return;
